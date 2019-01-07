@@ -69,7 +69,8 @@ public class SpecialCase {
     	}
     	return new OutputResult(benefit,opencost);
 	}
-
+    
+	//改输入：graph, 第二个是computation capacity, configuration number, openning cost
 	public void run(Graph graph,ArrayList<Double> capacity,ArrayList<Integer> k,ArrayList<Double> costlist,String filename) throws IOException{
 		
 		/*File f=new File(filename);
