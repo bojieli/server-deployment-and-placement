@@ -44,8 +44,8 @@ public class SpecialCase {
 		// ReadMe: If there are errors, use Alo2() instead.
 		//		   Alo2() is appro, instead of extension version.
 		//Alo3 a = new Alo3();
-		//Alo2 a = new Alo2();
-		//Result r = a.run(graph);
+		Alo2 a = new Alo2();
+		Result r = a.run(graph);
 		
 		Vector<ArrayList<Integer>> types = new Vector<ArrayList<Integer>>();
 		Vector<ArrayList<Double>> resources = new Vector<ArrayList<Double>>();
