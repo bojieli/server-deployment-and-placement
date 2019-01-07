@@ -18,11 +18,9 @@ import org.graphstream.stream.GraphParseException;
 
 import appro.*;
 import configuration.*;
-import extension.*;
-import tpds.*;
 import greedyheuristic.*;
 
-public class SpecialCase {
+public class GeneralCase {
 
 	private OutputResult random(Graph graph, ArrayList<Double> capacity, ArrayList<Integer> k, ArrayList<Double> costlist) {
 		base_one test = new base_one();
@@ -36,14 +34,12 @@ public class SpecialCase {
     	return new OutputResult(benefit,opencost);
 	}
 
-	private OutputResult approextension(Graph graph, ArrayList<Double> capacity, ArrayList<Integer> k, ArrayList<Double> costlist){
+	private OutputResult heuristic(Graph graph, ArrayList<Double> capacity, ArrayList<Integer> k, ArrayList<Double> costlist) {
 		double[][] cost = parameters_generator.netDelayMatrix(graph);
-
-		// ReadMe: If there are errors, use Alo2() instead.
-		//		   Alo2() is appro, instead of extension version.
-		//Alo3 a = new Alo3();
-		Alo2 a = new Alo2();
-		Result r = a.run(graph);
+		Heuristic heu = new Heuristic(cost,capacity,parameters_generator.nodeRequestResource(graph),graph.getNodeCount(),capacity.size());
+		Vector<Integer> placement = heu.run();
+		optdispaching optdis = new optdispaching();
+		HashMap<Integer,int[]> distribution = optdis.heuristicdispaching(graph, placement, capacity, cost);
 		
 		Vector<ArrayList<Integer>> types = new Vector<ArrayList<Integer>>();
 		Vector<ArrayList<Double>> resources = new Vector<ArrayList<Double>>();
@@ -51,24 +47,17 @@ public class SpecialCase {
 			types.add((ArrayList<Integer>)node.getAttribute("type"));
 			resources.add((ArrayList<Double>)node.getAttribute("resource"));
 		}
+		TopK topk = new TopK(types,resources,distribution,k,parameters_generator.CLOUDLET_NUM,parameters_generator.TYPE_SUM,capacity);
 		
-		Vector<Integer> placement = new Vector<Integer>();
-		for(int i:r.getPlacement()){
-			placement.add(i);
-		}
-		
-		optdispaching opt = new optdispaching();
-				
-		TopK topk = new TopK(types,resources,opt.translation(r.getAllocation(), graph),k,parameters_generator.CLOUDLET_NUM,parameters_generator.TYPE_SUM,capacity);
-		double benefit = opt.benefit(topk.configure().getDistribution(), cost, placement, graph);
+		lastopt opt = new lastopt();
+		double benefit = opt.lastoptdispatching(graph, placement, capacity, topk.configure().getConfiguration(), cost);
 		double opencost = 0.0;
-		for(int i = 0; i < r.getPlacement().length; ++i) {
-    		opencost = opencost + costlist.get(r.getPlacement()[i]);
+		for(int i : placement) {
+    		opencost = opencost + costlist.get(i);
     	}
     	return new OutputResult(benefit,opencost);
 	}
-    
-	//改输入：graph, 第二个是computation capacity, configuration number, openning cost
+
 	public void run(Graph graph,ArrayList<Double> capacity,ArrayList<Integer> k,ArrayList<Double> costlist,String filename) throws IOException{
 		
 		/*File f=new File(filename);
@@ -96,10 +85,10 @@ public class SpecialCase {
         parameters_generator.write(filename,"random benefit:"+a.benefit+"   delay:"+(count*parameters_generator.INTERNET_DELAY-a.benefit)
         	+"	cost:"+a.cost+"\n");
         System.out.println("random finished");
-        b = approextension(parameters_generator.copy(graph, "approextension"),capacity,k,costlist);
-        parameters_generator.write(filename,"approextension benefit:"+b.benefit+"   delay:"+(count*parameters_generator.INTERNET_DELAY-b.benefit)
+        b = heuristic(parameters_generator.copy(graph, "heuristic"),capacity,k,costlist);
+        parameters_generator.write(filename,"heuristic benefit:"+b.benefit+"   delay:"+(count*parameters_generator.INTERNET_DELAY-b.benefit)
         	+"	cost:"+b.cost+"\n");
-        System.out.println("approextension finished");
+        System.out.println("heuristic finished");
         
         parameters_generator.write(filename,matter.format(new Date())+"\n\n");
         System.exit(0);
@@ -121,19 +110,16 @@ public class SpecialCase {
 		}
 		process_data.readDataFile("part-00002-of-00500.csv",graph);
 
-		SpecialCase sc = new SpecialCase();
+		GeneralCase gc = new GeneralCase();
 		try{
     		ArrayList<Double> capacity = new ArrayList<Double>();
-    		ArrayList<Integer> k = new ArrayList<Integer>();
-    		for(int i=0;i<parameters_generator.CLOUDLET_NUM;i++){
+    		for(int i=0;i<parameters_generator.CLOUDLET_NUM;i++)
     			capacity.add((double)parameters_generator.CLOUDLET_CAP);
-    			k.add(parameters_generator.CONFIG_NUM);
-    		}
-    		sc.run(graph
+    		gc.run(graph
     			,capacity
-    			,k
+    			,parameters_generator.typeK(parameters_generator.CLOUDLET_NUM, 30,31)
     			,parameters_generator.cost(parameters_generator.AP_NUM)
-    			,"SpecialCase");
+    			,"GeneralCase");
     	}
     	catch(IOException x){
     		x.printStackTrace();
