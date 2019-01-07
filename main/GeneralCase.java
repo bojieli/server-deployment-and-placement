@@ -110,12 +110,9 @@ public class GeneralCase {
 
 		GeneralCase gc = new GeneralCase();
 		try{
-    		ArrayList<Double> capacity = new ArrayList<Double>();
-    		for(int i=0;i<parameters_generator.CLOUDLET_NUM;i++)
-    			capacity.add((double)parameters_generator.CLOUDLET_CAP);
     		gc.run(graph
-    			,capacity
-    			,parameters_generator.typeK(parameters_generator.CLOUDLET_NUM, 30,31)
+    			,parameters_generator.cloudletCapacity(parameters_generator.CLOUDLET_NUM, 8000, 12000)
+    			,parameters_generator.typeK(parameters_generator.CLOUDLET_NUM, 10, 20)
     			,parameters_generator.cost(parameters_generator.AP_NUM)
     			,"GeneralCase");
     	}
