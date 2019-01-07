@@ -56,7 +56,7 @@ public class GeneralCase {
     	return new OutputResult(benefit,opencost);
 	}
 
-	public void run(Graph graph,ArrayList<Double> capacity,ArrayList<Integer> k,ArrayList<Double> costlist,String filename) throws IOException{
+	public void run(Graph graph,ArrayList<Double> capacity,ArrayList<Integer> k,ArrayList<Double> costlist,String filename) throws Exception{
 		
 		/*File f=new File(filename);
         f.createNewFile();
@@ -116,7 +116,7 @@ public class GeneralCase {
     			,parameters_generator.cost(parameters_generator.AP_NUM)
     			,"GeneralCase");
     	}
-    	catch(IOException x){
+    	catch(Exception x){
     		x.printStackTrace();
     	}
 	}
