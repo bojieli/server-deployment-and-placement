@@ -43,13 +43,6 @@ public class parameters_generator {
 				i--;
 		}	
 	}
-
-	public static void delayinternet(double delay){
-		INTERNET = new double[AP_NUM];
-		for(int i = 0 ; i < INTERNET.length; i++){
-			INTERNET[i] = delay;
-		}
-	}
 	
 	/*if cloudlet don't have identical capacity
 	 * 	input: ----------------------------------------------------------暂时随机生成，后面有需要再改
