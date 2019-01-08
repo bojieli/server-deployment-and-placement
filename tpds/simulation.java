@@ -10,13 +10,17 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import org.graphstream.graph.ElementNotFoundException;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.SingleGraph;
 import org.graphstream.stream.GraphParseException;
+
+import com.alibaba.fastjson.JSONArray;
 
 import appro.network_topology_generator;
 import appro.parameters_generator;
@@ -58,15 +62,15 @@ public class simulation {
     	ArrayList<Integer> config2 = new ArrayList<>();
     	Node node1,node2;
     	node1 = graph.getNode(nodeindex);
-    	resource1 = node1.getAttribute("resource",ArrayList.class);
+    	resource1 = str2arr(node1.getAttribute("resource"));
     	if(resource1==null)
     		resource1 = new ArrayList<Double>();
     	resource2 =(ArrayList<Double>)resource1.clone();
-    	type1 = node1.getAttribute("type",ArrayList.class);
+    	type1 = str1arr(node1.getAttribute("type"));
     	if(type1 == null)
     		type1 = new ArrayList<Integer>();
     	type2 = (ArrayList<Integer>)type1.clone();
-    	config1 = node1.getAttribute("config", ArrayList.class);
+    	config1 = str1arr(node1.getAttribute("configuration"));
     	if(config1 == null)
     		config1 = new ArrayList<Integer>();
     	if(config1 == null)
@@ -81,6 +85,26 @@ public class simulation {
 	
     }
     
+    public static ArrayList<Integer> str1arr(Object input) {
+	    JSONArray jsonArray = JSONArray.parseArray(String.valueOf(input));
+	    ArrayList<Integer> arrayList = new ArrayList<>();
+	    for (Iterator<Object> it = jsonArray.iterator(); it.hasNext(); ) {
+	        Integer integer = (Integer) it.next();
+	        arrayList.add(integer);
+	    }
+	    return arrayList;
+	}
+    
+    public static ArrayList<Double> str2arr(Object input) {
+    	   JSONArray jsonArray = JSONArray.parseArray(String.valueOf(input));
+    	   ArrayList<Double> arrayList = new ArrayList<>();
+    	   for (Iterator<Object> it = jsonArray.iterator(); it.hasNext(); ) {
+    	      Double aDouble =  ((BigDecimal)it.next()).doubleValue();
+    	      arrayList.add(aDouble);
+    	   }
+    	   return arrayList;
+    	}
+
     
      public static void writeFile(String filename) throws IOException {
     	 
