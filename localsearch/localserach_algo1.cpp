@@ -16,7 +16,7 @@ using namespace std;
 
 vector<int> selectAppOnNewPoint();
 double costCalculation(const vector<int>& a, const vector<vector<int>>& b);
-int configurationFunction(const vector<int> a,vector<vector<int>>& b);
+int configurationFunction(const vector<int>& a,vector<vector<int>>& b);
 int addPoint(vector<int>& a, vector<vector<int>>& b);
 int dropPoint(vector<int>& a, vector<vector<int>>& b);
 void swapPoint(vector<int>& a, vector<vector<int>>& b);
