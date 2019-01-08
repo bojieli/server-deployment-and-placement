@@ -8,13 +8,18 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Vector;
+
+//import javax.swing.text.html.HTMLDocument.Iterator;
 
 import org.graphstream.graph.ElementNotFoundException;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.SingleGraph;
 import org.graphstream.stream.GraphParseException;
+
+import com.alibaba.fastjson.JSONArray;
 
 import appro.*;
 import configuration.*;
@@ -67,7 +72,8 @@ public class SpecialCase {
     	}
     	return new OutputResult(benefit,opencost);
 	}
-
+    
+	//改输入：graph, 第二个是computation capacity, configuration number, openning cost
 	public void run(Graph graph,ArrayList<Double> capacity,ArrayList<Integer> k,ArrayList<Double> costlist,String filename) throws IOException{
 		
 		/*File f=new File(filename);
@@ -85,7 +91,8 @@ public class SpecialCase {
 		long count = 0;
 		for(int i=0;i<graph.getNodeCount();i++){
 			 Node node = graph.getNode(i);
-			 ArrayList<Integer> list = (ArrayList<Integer>)node.getAttribute("type");
+			 ArrayList<Integer> list = str2arr(node.getAttribute("type"));
+			// list = node.getAttribute("type");
 			 count += list.size();
 		}
 
@@ -106,11 +113,22 @@ public class SpecialCase {
         fileOutputStream.close();  */
         
 	}
+	
+	public ArrayList<Integer> str2arr(Object input) {
+	    JSONArray jsonArray = JSONArray.parseArray(String.valueOf(input));
+	    ArrayList<Integer> arrayList = new ArrayList<>();
+	    for (Iterator<Object> it = jsonArray.iterator(); it.hasNext(); ) {
+	        Integer integer = (Integer) it.next();
+	        arrayList.add(integer);
+	    }
+	    return arrayList;
+	}
+
 
 	public static void main(String arg[]) { 
 		Graph graph = new SingleGraph("network");
 		try {
-			graph.read("ordinary_graph.dgs");
+			graph.read(parameters_generator.AP_NUM+"AP_graph.dgs");
 		} catch (ElementNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -118,16 +136,23 @@ public class SpecialCase {
 		} catch (GraphParseException e) {
 			e.printStackTrace();
 		}
-		process_data.readDataFile("part-00002-of-00500.csv",graph);
+		//process_data.readDataFile("part-00002-of-00500.csv",graph);
 
 		SpecialCase sc = new SpecialCase();
+		Node node;
+		double cap;
+		int config;
 		try{
     		ArrayList<Double> capacity = new ArrayList<Double>();
     		ArrayList<Integer> k = new ArrayList<Integer>();
-    		for(int i=0;i<parameters_generator.CLOUDLET_NUM;i++){
-    			capacity.add((double)parameters_generator.CLOUDLET_CAP);
-    			k.add(parameters_generator.CONFIG_NUM);
+    		for(int i=0;i<parameters_generator.AP_NUM;i++){
+    			node = graph.getNode(i);
+    			cap = node.getAttribute("capacity");
+    			config = node.getAttribute("configNum");
+    			capacity.add(cap);
+    			k.add(config);
     		}
+    		
     		sc.run(graph
     			,capacity
     			,k
