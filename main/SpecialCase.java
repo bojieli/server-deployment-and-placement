@@ -63,12 +63,19 @@ public class SpecialCase {
 		}
 		
 		optdispaching opt = new optdispaching();
+
+		ArrayList<Integer> cloudlet_configNum = new ArrayList<Integer>();
+		ArrayList<Double> cloudlet_capacity = new ArrayList<Double>();
+		for(int i: placement){
+			cloudlet_configNum.add(k.get(i));
+			cloudlet_capacity.add(capacity.get(i));
+		}
 				
-		TopK topk = new TopK(types,resources,opt.translation(r.getAllocation(), graph),k,parameters_generator.CLOUDLET_NUM,parameters_generator.TYPE_SUM,capacity);
+		TopK topk = new TopK(types,resources,opt.translation(r.getAllocation(), graph),cloudlet_configNum,parameters_generator.CLOUDLET_NUM,parameters_generator.TYPE_SUM,cloudlet_capacity);
 		double benefit = opt.benefit(topk.configure().getDistribution(), cost, placement, graph);
 		double opencost = 0.0;
-		for(int i = 0; i < r.getPlacement().length; ++i) {
-    		opencost = opencost + costlist.get(r.getPlacement()[i]);
+		for(int i :placement) {
+    		opencost = opencost + costlist.get(i);
     	}
     	return new OutputResult(benefit,opencost);
 	}

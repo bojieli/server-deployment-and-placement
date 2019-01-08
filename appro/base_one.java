@@ -55,7 +55,7 @@ public class base_one {
 		
 		for(int i = 0; i < cloudlet.length; i++){
 			ArrayList<Integer> config = new ArrayList<>();
-			for(int j = 0 ; j < typeK.get(i); j++){
+			for(int j = 0 ; j < typeK.get(cloudlet[i]); j++){
 				Random ran = new Random();
 				index = ran.nextInt(parameters_generator.TYPE_SUM);
 				if(config.contains(index))
