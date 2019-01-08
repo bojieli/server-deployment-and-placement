@@ -27,19 +27,16 @@ public class base_one {
 		
 		Node ap_node;
 		int index = 0;
-		double nodecap = 0;
+		String classify = "ap_node";
 		for(int i = 0; i < parameters_generator.CLOUDLET_NUM ; i++){
 			Random ran = new Random();
 			index = ran.nextInt(parameters_generator.AP_NUM);
 			ap_node = graph.getNode(index);
-			nodecap = ap_node.getAttribute("capacity");
-			
-			if(nodecap == 0){            //this node is not selected
+			if(classify.equals(ap_node.getAttribute("classify"))){
 				ap_node.setAttribute("classify", "cloudlet_node");
-				ap_node.setAttribute("capacity", cap.get(i));
 			}
-			else                //this node is selected
-				i=i-1;	
+			else
+				i--;
 		}
 		
 		//int[] cloudlet = new int[parameters_generator.CLOUDLET_NUM];
