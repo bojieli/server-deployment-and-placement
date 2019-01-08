@@ -8,7 +8,6 @@
 #include "MCMF.cpp"
 
 using namespace std;
-//extern ;
 
 #define avaPoint 10 //图中点的总个数
 #define appNum_w 10 //可选的app的总数，即算法中的w
@@ -36,7 +35,8 @@ double internet_delay = 0.8;
 vector<double> cloudlet_capacity;
 vector<double> opencost;
 vector<vector<double>> pathcost;
-vector<APAttributes> nodeattributes;
+vector<APAttributes> node_attributes;
+vector<int> node_apps;
 
 int firstAlgorithm() {
     vector<int> placement_z(avaPoint, 0);   //当placement_z[i]为1时代表图中的点i放置了服务器，为0则没有放置
@@ -47,7 +47,7 @@ int firstAlgorithm() {
     vector<vector<int>> configuration_x(avaPoint, vector<int>(appNum_w, 0));
     //初始化选第一个点放置服务器后，要选择M应用放到服务器0上，用selectAppOnNewPoint()函数随机选择，然后改变configuration_x矩阵中的值；
     vector<int> tmp = selectAppOnNewPoint();
-    for (unsigned i = 0; i < appOnEdge_m; i++) {
+    for (unsigned i = 0; i < node_apps[0]; i++) {
         configuration_x[0][tmp[i]] = 1;
     }
     //分别调用增加一个点，减去一个点，交换点的操作
@@ -78,7 +78,7 @@ int addPoint(vector<int>& placement_z, vector<vector<int>>& config_x) {
     while (p < idlePoint.size()) {//遍历还没有放置服务器的点
         placement_z[idlePoint[p]] = 1;//放置服务器
         vector<int> tmp = selectAppOnNewPoint();//配置M个app
-        for (unsigned int j = 0; j < appOnEdge_m; j++) {
+        for (unsigned int j = 0; j < node_apps[idlePoint[p]]; j++) {
             config_x[idlePoint[p]][tmp[j]] = 1;
         }
         configurationFunction(placement_z, config_x);//调用configuration过程，来求最佳的配置（我们调用configuration函数的目的就是为了求比当前cost小的配置）
@@ -152,7 +152,7 @@ void swapPoint(vector<int>& placement_z, vector<vector<int>>& config_x) {
             placement_z[selectedPoint[p]] = 0;
             placement_z[idlePoint[q]] = 1;
             vector<int> tmp = selectAppOnNewPoint();
-            for (unsigned int j = 0; j < appOnEdge_m; j++) {
+            for (unsigned int j = 0; j < node_apps[idlePoint[q]]; j++) {
                 config_x[idlePoint[q]][tmp[j]] = 1;
             }
             configurationFunction(placement_z, config_x);//调用configuration过程
@@ -221,7 +221,7 @@ double costCalculation(const vector<int>& placement_z, const vector<vector<int>>
     // requests_sum are caculated based on the request type, 
     // instead of single request in real case.
     int requests_sum = 0;
-    for(const auto& attribute: nodeattributes) {
+    for(const auto& attribute: node_attributes) {
         requests_sum += attribute.requests.size();
     }
     flowgraph.init(requests_sum + selectedPoint.size() + 1 + 2);
@@ -229,7 +229,7 @@ double costCalculation(const vector<int>& placement_z, const vector<vector<int>>
     // Each src have an edge point to requests
     unsigned int request_index = 1;
     unsigned int current_ap = 0;
-    for(const auto& attribute: nodeattributes) {
+    for(const auto& attribute: node_attributes) {
         for(const auto& type_request_pair: attribute.requests) {
             double resource = type_request_pair.second;
             flowgraph.AddEdge(requests_sum + selectedPoint.size() + 2,
@@ -260,7 +260,7 @@ double costCalculation(const vector<int>& placement_z, const vector<vector<int>>
     for(unsigned int i = 0; i < selectedPoint.size(); ++i) {
         flowgraph.AddEdge(requests_sum + i + 1,
                           requests_sum + selectedPoint.size() + 3,
-                          cloudlet_capacity[i],
+                          cloudlet_capacity[selectedPoint[i]],
                           0);
     }
     flowgraph.AddEdge(requests_sum + selectedPoint.size() + 1,
