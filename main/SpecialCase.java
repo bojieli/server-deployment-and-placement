@@ -91,7 +91,7 @@ public class SpecialCase {
 		long count = 0;
 		for(int i=0;i<graph.getNodeCount();i++){
 			 Node node = graph.getNode(i);
-			 ArrayList<Integer> list = str2arr(node.getAttribute("type"));
+			 ArrayList<Integer> list = str1arr(node.getAttribute("type"));
 			// list = node.getAttribute("type");
 			 count += list.size();
 		}
@@ -114,7 +114,7 @@ public class SpecialCase {
         
 	}
 	
-	public ArrayList<Integer> str2arr(Object input) {
+	public ArrayList<Integer> str1arr(Object input) {
 	    JSONArray jsonArray = JSONArray.parseArray(String.valueOf(input));
 	    ArrayList<Integer> arrayList = new ArrayList<>();
 	    for (Iterator<Object> it = jsonArray.iterator(); it.hasNext(); ) {
