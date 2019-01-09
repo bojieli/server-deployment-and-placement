@@ -33,14 +33,17 @@ public class parameters_generator {
 	public static void delayinternet(){
 		
 		INTERNET = new double[AP_NUM];
-		Random ran = new Random();
-		double number =0;
+		//Random ran = new Random();
+		//double number =0;
 		for(int i = 0 ; i < INTERNET.length; i++){
+		/*
 			number = ran.nextDouble()*0.8+0.2;
 			if(number > 0.8)
 				INTERNET[i] = number;
 			else
 				i--;
+		*/
+			INTERNET[i] = INTERNET_DELAY;
 		}	
 	}
 	
