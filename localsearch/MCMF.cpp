@@ -1,6 +1,8 @@
 #include <math.h>
 #include <vector>
 #include <queue>
+#include <iostream>
+#include <stdio.h>
 
 using namespace std;
 
@@ -11,19 +13,22 @@ class EDGE {
 		int v, next;   //----------------------cap,cost: int?
 		double cap,cost;
 		int original;
+		double reserve;
 		EDGE()
 		:v(0),
 		 next(0),
 		 cap(0.0),
 		 cost(0.0),
-		 original(0.0) {}
+		 original(0),
+		 reserve(0.0) {}
 	
 		EDGE(int a, double b, double c,int d,int e)
 		:v(a),
 		 cap(b),
 		 cost(c),
 		 next(d),
-		 original(e) {}
+		 original(e),
+		 reserve(cap) {}
 };
 
 class MCMF {
@@ -55,7 +60,7 @@ class MCMF {
 			E.emplace_back(v, cap, cost, net[u], 1);
 			net[u] = size++;
 			E.emplace_back(u, 0, -cost, net[v], 0);
-			net[v] = size++;	
+			net[v] = size++;
 		}
 
 		double calMCMF(int s, int t){
@@ -102,7 +107,7 @@ class MCMF {
 					continue;
 				for(int j = net[i]; j != -1 ; j = E[j].next){
 					v = E[j].v;
-					if(fabs(E[j].cap) > ZERO)
+					if(fabs(E[j].reserve) > ZERO)
 						flag = true;
 					else
 						flag = false;
@@ -132,14 +137,14 @@ class MCMF {
 			vis[i] = true;
 			for(int j = cur[i],v ; j != -1 ;j = E[j].next){
 				v = E[j].v;
-				if(fabs(E[j].cap) < ZERO)
+				if(fabs(E[j].reserve) < ZERO)
 					continue;
 				if(vis[v] || fabs(dis[v]+E[j].cost - dis[i]) > ZERO)
 					continue;
-				double delta = augment(v, flow < E[j].cap ? flow : E[j].cap);
+				double delta = augment(v, flow < E[j].reserve ? flow : E[j].reserve);
 				if(fabs(delta) > ZERO){
-					E[j].cap -= delta;
-					E[j^1].cap += delta;
+					E[j].reserve -= delta;
+					E[j^1].reserve += delta;
 					cur[i] = j;
 					return delta;
 				}
@@ -162,7 +167,7 @@ class MCMF {
 				vis[u] = false;
 				for(int i = net[u]; i != -1; i = E[i].next){
 					v = E[i].v;
-					if(fabs(E[i].cap) < ZERO||dis[v] <= dis[u]+E[i].cost)
+					if(fabs(E[i].reserve) < ZERO||dis[v] <= dis[u]+E[i].cost)
 						continue;
 						
 					dis[v] = dis[u]+E[i].cost;
@@ -182,7 +187,7 @@ class MCMF {
 	        int edgeId = net[nodeId];
 	        while(edgeId!=-1){
 	            int rightId = E[edgeId].v;
-	            double edgeflow = inf - E[edgeId].cap;
+	            double edgeflow = E[edgeId].cap - E[edgeId].reserve;
 	            if(E[edgeId].original == 1 && fabs(edgeflow)>ZERO){
 	                from.emplace_back(nodeId);
 	                to.emplace_back(rightId);
@@ -193,20 +198,3 @@ class MCMF {
 	    }
 		}
 };
-/*
-int main() {
-		MCMF augraph;     
-		augraph.init(5); 
-		
-		augraph.AddEdge(1 ,2 ,10, 4);
-		augraph.AddEdge(1 ,3 ,MCMF::inf, 1);
-		augraph.AddEdge(3 ,2 ,5, 2);
-		augraph.AddEdge(3 ,4 ,10,3);
-		augraph.AddEdge(2 ,4 ,6, 2);
-		augraph.AddEdge(2 ,5 ,7, 1);
-		augraph.AddEdge(4 ,5 ,4, 2);
-		
-		augraph.MincostMaxflow(1, 5);
-		return 0;
-}
-*/

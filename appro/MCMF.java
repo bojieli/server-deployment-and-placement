@@ -55,7 +55,7 @@ public class MCMF {
 				continue;
 			for(int j = net[i]; j != -1 ; j = E.get(j).next){
 				v = E.get(j).v;
-				if(Math.abs(E.get(j).cap) > 1e-8)
+				if(Math.abs(E.get(j).reserve) > 1e-8)
 					flag = true;
 				else
 					flag = false;
@@ -86,14 +86,14 @@ public class MCMF {
 		vis[i] = true;
 		for(int j = cur[i],v ; j != -1 ;j = E.get(j).next){
 			v = E.get(j).v;
-			if(Math.abs(E.get(j).cap) < 1e-8)
+			if(Math.abs(E.get(j).reserve) < 1e-8)
 				continue;
 			if(vis[v] || Math.abs(dis[v]+E.get(j).cost - dis[i]) > 1e-8)
 				continue;
-			double delta = augment(v, Math.min(flow, E.get(j).cap));
+			double delta = augment(v, Math.min(flow, E.get(j).reserve));
 			if(Math.abs(delta) > 1e-8){
-				E.get(j).cap -= delta;
-				E.get(j^1).cap += delta;
+				E.get(j).reserve -= delta;
+				E.get(j^1).reserve += delta;
 				cur[i] = j;
 				return delta;
 			}
@@ -116,7 +116,7 @@ public class MCMF {
 			vis[u] = false;
 			for(int i = net[u]; i != -1; i = E.get(i).next){
 				v = E.get(i).v;
-				if(Math.abs(E.get(i).cap) < 1e-8||dis[v] <= dis[u]+E.get(i).cost)
+				if(Math.abs(E.get(i).reserve) < 1e-8||dis[v] <= dis[u]+E.get(i).cost)
 					continue;
 					
 				dis[v] = dis[u]+E.get(i).cost;
@@ -137,7 +137,7 @@ public class MCMF {
 	        int edgeId = net[nodeId];
 	        while(edgeId!=-1){
 	            int rightId = E.get(edgeId).v;
-	            double edgeflow = inf - E.get(edgeId).cap;
+	            double edgeflow = E.get(edgeId).cap - E.get(edgeId).reserve;
 	            if(E.get(edgeId).original == 1 && Math.abs(edgeflow)>1e-8){
 	                from.add(nodeId);
 	                to.add(rightId);
