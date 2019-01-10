@@ -9,17 +9,25 @@
 
 using namespace std;
 
+// Experiment settings
 #define avaPoint 10 //图中点的总个数
 #define appNum_w 10 //可选的app的总数，即算法中的w
 #define appOnEdge_m 3 //每个选中的server配置的app的个数，即算法中的M
 
+const double epsilon = 1e-5;
+const double alpha = 0.5;
+const double internet_delay = 8.0;
+
+/*
 vector<int> selectAppOnNewPoint();
 double costCalculation(const vector<int>& a, const vector<vector<int>>& b);
-int configurationFunction(const vector<int>& a,vector<vector<int>>& b);
+double configurationFunction(const vector<int>& a,vector<vector<int>>& b);
 int addPoint(vector<int>& a, vector<vector<int>>& b);
 int dropPoint(vector<int>& a, vector<vector<int>>& b);
 void swapPoint(vector<int>& a, vector<vector<int>>& b);
 int firstAlgorithm();
+*/
+void print_placement_and_config(const vector<int>& placement_z, const vector<vector<int>>& configuration_x, double minCost);
 
 struct APAttributes
 {
@@ -29,15 +37,13 @@ struct APAttributes
     :requests(move(a.requests)) {}
 };
 
-// Experiment settings
-double alpha = 0.5;
-double internet_delay = 0.8;
 vector<double> cloudlet_capacity;
 vector<double> opencost;
 vector<vector<double>> pathcost;
 vector<APAttributes> node_attributes;
 vector<int> node_apps;
 
+/*
 int firstAlgorithm() {
     vector<int> placement_z(avaPoint, 0);   //当placement_z[i]为1时代表图中的点i放置了服务器，为0则没有放置
     placement_z[0] = 1; //初始化只选第一个点放置服务器
@@ -181,6 +187,7 @@ void swapPoint(vector<int>& placement_z, vector<vector<int>>& config_x) {
     dropPoint(placement_z, config_x);
     swapPoint(placement_z, config_x);
 }
+
 //随机选择app放在server上
 vector<int> selectAppOnNewPoint() {
     //这个函数并不是产生M个随机数来选择app，而是用shuffle的方法，举个例子，我们要从0-10中选3个随机数，只要将0-10这11个数随机打乱（shuffle），取前三个即可
@@ -192,6 +199,8 @@ vector<int> selectAppOnNewPoint() {
     shuffle(tmp.begin(), tmp.end(), default_random_engine(seed));
     return tmp;
 }
+*/
+
 //计算cost的函数
 double costCalculation(const vector<int>& placement_z, const vector<vector<int>>& config_x) {
     // Find the selected cloudlets.
@@ -270,48 +279,158 @@ double costCalculation(const vector<int>& placement_z, const vector<vector<int>>
 
     double delay_cost = flowgraph.MincostMaxflow(requests_sum + selectedPoint.size() + 2,
                                                  requests_sum + selectedPoint.size() + 3);
-    return alpha * delay_cost + (1 - alpha) * deploy_cost;
+    double total_cost = alpha * delay_cost + (1 - alpha) * deploy_cost;
+
+    print_placement_and_config(placement_z, config_x, total_cost);
+    return total_cost;
 }
+
 //配置函数
-int configurationFunction(const vector<int>& placement_z, vector<vector<int>>& config_x) {
+double try_admissible_configuration_operations(const vector<int>& placement_z, vector<vector<int>>& config_x)
+{
     double minCost = costCalculation(placement_z, config_x);
+
     for (unsigned i = 0; i < avaPoint; i++) {
         //对所有已经放置了服务器的点，我们都要求更小cost的app配置
-        if (placement_z[i] == 1) {
-            //首先找到该点已经配置的app，和没有配置的app
-            vector<int> alreadyDeployed;
-            vector<int> waitForSwap;
-            for (unsigned int j = 0; j < appNum_w; j++) {
-                if (config_x[i][j] == 1) {
-                    alreadyDeployed.push_back(j);
-                } else {
-                    waitForSwap.push_back(j);
-                }
-            }
-            unsigned int p = 0, q = 0;
-            while (p < alreadyDeployed.size()) {
-                int breakFlag = 0;
-                while (q < waitForSwap.size()) {
-                    //用两个while循环依次交换配置的服务
-                    config_x[i][alreadyDeployed[p]] = 0;
-                    config_x[i][waitForSwap[q]] = 1;
-                    double newCost = costCalculation(placement_z, config_x);
-                    if (newCost < minCost) {//如果替换后cost更小，那我们就跳出，替换下一个
-//                        newCost = minCost;
-                        breakFlag = 1;//用一个flag来记录是因为找到更小的cost跳出，还是因为可交换的app用完了才跳出
-                        p++;
-                        break;
-                    } else {//如果替换后cost没有更小，那就还原，继续交换下一个试试看
-                        config_x[i][alreadyDeployed[p]] = 1;
-                        config_x[i][waitForSwap[q]] = 0;
-                        q++;
-                    }
-                }
-                if (breakFlag == 0) {//如果是因为可交换的app用完了才跳出，那说明这次循环没有找到可替换的点，我们继续替换下一个
-                    p++;
-                }
-            }
+        if (placement_z[i] == 1)
+            // find a configured application
+            for (unsigned j = 0; j < appNum_w; j++)
+                if (config_x[i][j] == 1)
+                    // find a not configured application
+                    for (unsigned k = 0; k < appNum_w; k++)
+                        if (config_x[i][k] == 0) {
+                            // try swap operation
+                            config_x[i][k] = 1;
+                            config_x[i][j] = 0;
+                            double curCost = costCalculation(placement_z, config_x);
+                            if (curCost < (1 - epsilon) * minCost) {
+                                return curCost;
+                            }
+                            config_x[i][j] = 1;
+                            config_x[i][k] = 0;
+                        }
+    }
+    return minCost;
+}
+
+double configurationFunction(const vector<int>& placement_z, vector<vector<int>>& config_x)
+{
+    double minCost = costCalculation(placement_z, config_x);
+    vector<vector<int>> best_config = config_x;
+    while (1) {
+        double curCost = try_admissible_configuration_operations(placement_z, config_x);
+        if (curCost < (1 - epsilon) * minCost) {
+            minCost = curCost;
+            best_config = config_x;
+        }
+        else {
+            break;
         }
     }
-    return 0;
+    config_x = best_config;
+    return minCost;
+}
+
+double initial_configuration(const vector<int>& placement_z, vector<vector<int>>& configuration_x, unsigned new_point)
+{
+    // initialize to zero
+    for (unsigned i = 0; i < appNum_w; i++) {
+        configuration_x[new_point][i] = 0;
+    }
+    
+    //这个函数并不是产生M个随机数来选择app，而是用shuffle的方法，举个例子，我们要从0-10中选3个随机数，只要将0-10这11个数随机打乱（shuffle），取前三个即可
+    vector<int> tmp;
+    for (unsigned int i = 0; i < appNum_w; i++) {
+        tmp.push_back(i);
+    }
+    unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+    shuffle(tmp.begin(), tmp.end(), default_random_engine(seed));
+
+    // configure node_apps[new_point] number of applications
+    for (unsigned i = 0; i < node_apps[new_point]; i++) {
+        configuration_x[new_point][tmp[i]] = 1;
+    }
+}
+ 
+double initial_placement(vector<int>& placement_z, vector<vector<int>>& configuration_x)
+{
+    for (unsigned i = 0; i < avaPoint; i++)
+        placement_z[i] = 0;
+    unsigned new_point = 0;
+    placement_z[new_point] = 1; //初始化只选第一个点放置服务器
+    initial_configuration(placement_z, configuration_x, new_point);
+}
+
+double try_admissible_placement_operations(vector<int>& placement_z, vector<vector<int>>& config_x)
+{
+    double minCost = costCalculation(placement_z, config_x);
+    vector<vector<int>> best_config = config_x;
+
+    // try add operation
+    for (unsigned i = 0; i < avaPoint; i++)
+        if (placement_z[i] == 0) {
+            placement_z[i] = 1;
+            initial_configuration(placement_z, config_x, i);
+            double curCost = configurationFunction(placement_z, config_x);
+            if (curCost < (1 - epsilon) * minCost) {
+                return curCost;
+            }
+            config_x = best_config;
+            placement_z[i] = 0;
+        }
+
+    // try delete operation
+    for (unsigned i = 0; i < avaPoint; i++)
+        if (placement_z[i] == 1) {
+            placement_z[i] = 0;
+            double curCost = configurationFunction(placement_z, config_x);
+            if (curCost < (1 - epsilon) * minCost) {
+                return curCost;
+            }
+            config_x = best_config;
+            placement_z[i] = 1;
+        }
+
+    // try swap operation
+    for (unsigned i = 0; i < avaPoint; i++)
+        if (placement_z[i] == 1)
+            for (unsigned j = 0; j < avaPoint; j++)
+                if (placement_z[j] == 0) {
+                    placement_z[j] = 1;
+                    placement_z[i] = 0;
+                    double curCost = configurationFunction(placement_z, config_x);
+                    if (curCost < (1 - epsilon) * minCost) {
+                        return curCost;
+                    }
+                    config_x = best_config;
+                    placement_z[i] = 1;
+                    placement_z[j] = 0;
+                }
+
+    config_x = best_config;
+    return minCost;
+}
+
+double placementFunction(vector<int>& placement_z, vector<vector<int>>& configuration_x)
+{
+    initial_placement(placement_z, configuration_x);
+    double minCost = costCalculation(placement_z, configuration_x);
+    vector<int> best_placement = placement_z;
+    vector<vector<int>> best_config = configuration_x;
+
+    while (1) {
+        double curCost = try_admissible_placement_operations(placement_z, configuration_x);
+        if (curCost < (1 - epsilon) * minCost) {
+            minCost = curCost;
+            best_placement = placement_z;
+            best_config = configuration_x;
+        }
+        else {
+            break;
+        }
+    }
+    
+    placement_z = best_placement;
+    configuration_x = best_config;
+    return minCost;
 }
