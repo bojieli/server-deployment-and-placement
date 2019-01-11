@@ -10,8 +10,8 @@
 using namespace std;
 
 // Experiment settings
-#define avaPoint 20 //图中点的总个数
-#define appNum_w 20 //可选的app的总数，即算法中的w
+#define avaPoint 10 //图中点的总个数
+#define appNum_w 10 //可选的app的总数，即算法中的w
 //#define appOnEdge_m 3 //每个选中的server配置的app的个数，即算法中的M
 
 const double epsilon = 1e-5;
@@ -294,6 +294,7 @@ double costCalculation(const vector<int>& placement_z, const vector<vector<int>>
 double try_admissible_configuration_operations(const vector<int>& placement_z, vector<vector<int>>& config_x)
 {
     double minCost = costCalculation(placement_z, config_x);
+    vector<vector<int>> best_config = config_x;
 
     for (unsigned i = 0; i < avaPoint; i++) {
         //对所有已经放置了服务器的点，我们都要求更小cost的app配置
@@ -309,36 +310,19 @@ double try_admissible_configuration_operations(const vector<int>& placement_z, v
                             config_x[i][j] = 0;
                             double curCost = costCalculation(placement_z, config_x);
                             if (curCost < (1 - epsilon) * minCost) {
-                                return curCost;
+                                minCost = curCost;
+                                best_config = config_x;
                             }
                             config_x[i][j] = 1;
                             config_x[i][k] = 0;
                         }
     }
-    return minCost;
-}
 
-#ifndef TOPK
-double configurationFunction(const vector<int>& placement_z, vector<vector<int>>& config_x)
-{
-    double minCost = costCalculation(placement_z, config_x);
-    vector<vector<int>> best_config = config_x;
-    while (1) {
-        double curCost = try_admissible_configuration_operations(placement_z, config_x);
-        if (curCost < (1 - epsilon) * minCost) {
-            print_placement_and_config(placement_z, config_x, curCost);
-            minCost = curCost;
-            best_config = config_x;
-        }
-        else {
-            break;
-        }
-    }
     config_x = best_config;
     return minCost;
 }
-#else // ifdef TOPK
-double configurationFunction(const vector<int>& placement_z, vector<vector<int>>& config_x) {
+
+void top_k_configuration(const vector<int>& placement_z, vector<vector<int>>& config_x) {
     for(auto& config: config_x) {
         for(unsigned int i = 0; i < config.size(); ++i) {
             config[i] = 0;
@@ -450,7 +434,32 @@ double configurationFunction(const vector<int>& placement_z, vector<vector<int>>
             edge_types_counts[cloudlet][max_index] = -0.1;
         }
     }
+}
 
+
+#ifndef TOPK
+double configurationFunction(const vector<int>& placement_z, vector<vector<int>>& config_x)
+{
+    top_k_configuration(placement_z, config_x);
+    double minCost = costCalculation(placement_z, config_x);
+    vector<vector<int>> best_config = config_x;
+    while (1) {
+        double curCost = try_admissible_configuration_operations(placement_z, config_x);
+        if (curCost < (1 - epsilon) * minCost) {
+            print_placement_and_config(placement_z, config_x, curCost);
+            minCost = curCost;
+            best_config = config_x;
+        }
+        else {
+            break;
+        }
+    }
+    config_x = best_config;
+    return minCost;
+}
+#else // ifdef TOPK
+double configurationFunction(const vector<int>& placement_z, vector<vector<int>>& config_x) {
+    top_k_configuration(placement_z, config_x);
     return costCalculation(placement_z, config_x);
 }
 #endif // ifdef TOPK
@@ -476,19 +485,33 @@ double initial_configuration(const vector<int>& placement_z, vector<vector<int>>
     }
 }
  
-double initial_placement(vector<int>& placement_z, vector<vector<int>>& configuration_x)
+void initial_placement(vector<int>& placement_z, vector<vector<int>>& configuration_x)
 {
     for (unsigned i = 0; i < avaPoint; i++)
         placement_z[i] = 0;
+    
+    double total_demand = 0.0;
+    for (const auto& attribute: node_attributes) {
+        for (const auto& type_request_pair: attribute.requests) {
+            total_demand += type_request_pair.second;
+        }
+    }
+
     unsigned new_point = 0;
-    placement_z[new_point] = 1; //初始化只选第一个点放置服务器
-    initial_configuration(placement_z, configuration_x, new_point);
+    while (total_demand > 0) {
+        placement_z[new_point] = 1; //初始化只选第一个点放置服务器
+        initial_configuration(placement_z, configuration_x, new_point);
+        total_demand -= cloudlet_capacity[new_point];
+        new_point ++;
+    }
 }
 
 double try_admissible_placement_operations(vector<int>& placement_z, vector<vector<int>>& config_x)
 {
     double minCost = costCalculation(placement_z, config_x);
+    vector<int> best_placement = placement_z;
     vector<vector<int>> best_config = config_x;
+    vector<vector<int>> orig_config = config_x;
 
     // try add operation
     for (unsigned i = 0; i < avaPoint; i++)
@@ -497,9 +520,11 @@ double try_admissible_placement_operations(vector<int>& placement_z, vector<vect
             initial_configuration(placement_z, config_x, i);
             double curCost = configurationFunction(placement_z, config_x);
             if (curCost < (1 - epsilon) * minCost) {
-                return curCost;
+                minCost = curCost;
+                best_placement = placement_z;
+                best_config = config_x;
             }
-            config_x = best_config;
+            config_x = orig_config;
             placement_z[i] = 0;
         }
 
@@ -509,9 +534,11 @@ double try_admissible_placement_operations(vector<int>& placement_z, vector<vect
             placement_z[i] = 0;
             double curCost = configurationFunction(placement_z, config_x);
             if (curCost < (1 - epsilon) * minCost) {
-                return curCost;
+                minCost = curCost;
+                best_placement = placement_z;
+                best_config = config_x;
             }
-            config_x = best_config;
+            config_x = orig_config;
             placement_z[i] = 1;
         }
 
@@ -524,13 +551,16 @@ double try_admissible_placement_operations(vector<int>& placement_z, vector<vect
                     placement_z[i] = 0;
                     double curCost = configurationFunction(placement_z, config_x);
                     if (curCost < (1 - epsilon) * minCost) {
-                        return curCost;
+                        minCost = curCost;
+                        best_placement = placement_z;
+                        best_config = config_x;
                     }
-                    config_x = best_config;
+                    config_x = orig_config;
                     placement_z[i] = 1;
                     placement_z[j] = 0;
                 }
 
+    placement_z = best_placement;
     config_x = best_config;
     return minCost;
 }
