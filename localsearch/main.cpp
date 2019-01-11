@@ -183,7 +183,7 @@ void load_graph(char *filename)
                     s += 9;
                     double capacity;
                     if (sscanf(s, "%lf", &capacity) == 1) {
-                        cloudlet_capacity[node] = capacity;
+                        cloudlet_capacity[node] = capacity * appNum_w;
                     }
                 }
 

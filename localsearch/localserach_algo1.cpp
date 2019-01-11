@@ -11,8 +11,8 @@ using namespace std;
 
 // Experiment settings
 #define avaPoint 10 //图中点的总个数
-#define appNum_w 10 //可选的app的总数，即算法中的w
-#define appOnEdge_m 3 //每个选中的server配置的app的个数，即算法中的M
+#define appNum_w 20 //可选的app的总数，即算法中的w
+//#define appOnEdge_m 3 //每个选中的server配置的app的个数，即算法中的M
 
 const double epsilon = 1e-5;
 const double alpha = 0.5;
@@ -281,7 +281,7 @@ double costCalculation(const vector<int>& placement_z, const vector<vector<int>>
                                                  requests_sum + selectedPoint.size() + 3);
     double total_cost = alpha * delay_cost + (1 - alpha) * deploy_cost;
 
-    print_placement_and_config(placement_z, config_x, total_cost);
+    //print_placement_and_config(placement_z, config_x, total_cost);
     return total_cost;
 }
 
@@ -320,6 +320,7 @@ double configurationFunction(const vector<int>& placement_z, vector<vector<int>>
     while (1) {
         double curCost = try_admissible_configuration_operations(placement_z, config_x);
         if (curCost < (1 - epsilon) * minCost) {
+            print_placement_and_config(placement_z, config_x, curCost);
             minCost = curCost;
             best_config = config_x;
         }
@@ -421,6 +422,7 @@ double placementFunction(vector<int>& placement_z, vector<vector<int>>& configur
     while (1) {
         double curCost = try_admissible_placement_operations(placement_z, configuration_x);
         if (curCost < (1 - epsilon) * minCost) {
+            print_placement_and_config(placement_z, configuration_x, curCost);
             minCost = curCost;
             best_placement = placement_z;
             best_config = configuration_x;
