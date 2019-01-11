@@ -318,6 +318,7 @@ double try_admissible_configuration_operations(const vector<int>& placement_z, v
     return minCost;
 }
 
+#ifndef TOPK
 double configurationFunction(const vector<int>& placement_z, vector<vector<int>>& config_x)
 {
     double minCost = costCalculation(placement_z, config_x);
@@ -336,6 +337,123 @@ double configurationFunction(const vector<int>& placement_z, vector<vector<int>>
     config_x = best_config;
     return minCost;
 }
+#else // ifdef TOPK
+double configurationFunction(const vector<int>& placement_z, vector<vector<int>>& config_x) {
+    for(auto& config: config_x) {
+        for(unsigned int i = 0; i < config.size(); ++i) {
+            config[i] = 0;
+        }
+    }
+
+    // Find the selected cloudlets.
+    vector<int> selectedPoint;
+    double deploy_cost = 0.0;
+    for (unsigned int i = 0; i < avaPoint; i++) {
+        if (placement_z[i] == 1) {
+            selectedPoint.push_back(i);
+            deploy_cost += opencost[i];
+        }
+    }
+
+    // Build the flow graph
+    MCMF flowgraph;
+    /**
+     * Total vertices = the number of AP 
+     *                  + number of current cloudlets
+     *                  + remote DC + 2 virtual points (src and dst)
+     *
+     * The index in the graph is assigned as follow:
+     *  1 -- NUM_AP : ap
+     *  NUM_AP+1 -- SUM+NUM_CLOUDLET : cloudlet
+     *  NUM_AP+NUM_CLOUDLET+1 : DC
+     *  NUM_AP+NUM_CLOUDLET+2 : src
+     *  NUM_AP+NUM_CLOUDLET+3 : dst
+     */
+    flowgraph.init(avaPoint + selectedPoint.size() + 1 + 2);
+
+    // Each src have an edge point to ap
+    for(unsigned int i = 0; i < avaPoint; ++i) {
+        double resource = 0.0;
+        for(const auto& pair: node_attributes[i].requests) {
+            resource += pair.second;
+        }
+
+        flowgraph.AddEdge(avaPoint + selectedPoint.size() + 2,
+                          i + 1,
+                          resource,
+                          0);
+        // Each ap have an edge point to a cloudlet
+        for(unsigned int j = 0; j < selectedPoint.size(); ++j) {
+            flowgraph.AddEdge(i + 1,
+                              avaPoint + j + 1,
+                              MCMF::inf,
+                              pathcost[i][selectedPoint[j]]);
+        }
+        // Each ap have an edge point to the DC
+        flowgraph.AddEdge(i + 1,
+                          avaPoint + selectedPoint.size() + 1,
+                          MCMF::inf,
+                          internet_delay);
+    }
+
+    // Each cloudlet and DC have an edge point to the dst
+    for(unsigned int i = 0; i < selectedPoint.size(); ++i) {
+        flowgraph.AddEdge(avaPoint + i + 1,
+                          avaPoint + selectedPoint.size() + 3,
+                          cloudlet_capacity[selectedPoint[i]],
+                          0);
+    }
+    flowgraph.AddEdge(avaPoint + selectedPoint.size() + 1,
+                      avaPoint + selectedPoint.size() + 3,
+                      MCMF::inf,
+                      0);
+
+    flowgraph.MincostMaxflow(avaPoint + selectedPoint.size() + 2,
+                             avaPoint + selectedPoint.size() + 3);
+    
+    // Count the total amount of each type that cloudlet receives.
+    vector<vector<double>> edge_types_counts(avaPoint);
+    for(unsigned int i = 0; i < avaPoint; ++i) {
+        edge_types_counts[i].reserve(appNum_w);
+        for(unsigned int j = 0; j < appNum_w; ++j) {
+            edge_types_counts[i][j] = 0.0;
+        }
+    }
+    for(unsigned int i = 0; i < flowgraph.flow.size(); ++i) {
+        // Pass this flow if the destination is not cloudlet.
+        if(flowgraph.to[i] < avaPoint + 1 || flowgraph.to[i] > avaPoint + selectedPoint.size()) {
+            continue;
+        }
+        APAttributes& node = node_attributes[flowgraph.from[i] - 1];
+        double totalrequests = 0.0;
+        for(const auto& type_request_pair: node.requests) {
+            totalrequests += type_request_pair.second;
+        }
+        double ratio = flowgraph.flow[i] / totalrequests;
+        for(const auto& type_request_pair: node.requests) {
+            edge_types_counts[flowgraph.to[i] - avaPoint - 1][type_request_pair.first] 
+                += ratio * type_request_pair.second;
+        }
+    }
+
+    // Configure cloudlet based on received types.
+    for(unsigned int cloudlet_index = 0; cloudlet_index < selectedPoint.size(); ++cloudlet_index) {
+        int cloudlet = selectedPoint[cloudlet_index];
+        for(unsigned int k = 0; k < node_apps[cloudlet]; ++k) {
+            unsigned int max_index = 0;
+            for(unsigned int i = 1; i < appNum_w; ++i) {
+                if(edge_types_counts[cloudlet][i] > edge_types_counts[cloudlet][max_index]) {
+                    max_index = i;
+                }
+            }
+            config_x[cloudlet][max_index] = 1;
+            edge_types_counts[cloudlet][max_index] = -0.1;
+        }
+    }
+
+    return costCalculation(placement_z, config_x);
+}
+#endif // ifdef TOPK
 
 double initial_configuration(const vector<int>& placement_z, vector<vector<int>>& configuration_x, unsigned new_point)
 {
