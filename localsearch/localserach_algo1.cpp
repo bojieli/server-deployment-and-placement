@@ -11,7 +11,7 @@ using namespace std;
 
 // Experiment settings
 #define avaPoint 20 //图中点的总个数
-#define appNum_w 10 //可选的app的总数，即算法中的w
+#define appNum_w 20 //可选的app的总数，即算法中的w
 //#define appOnEdge_m 3 //每个选中的server配置的app的个数，即算法中的M
 
 const double epsilon = 1e-5;
@@ -535,6 +535,7 @@ double try_admissible_placement_operations(vector<int>& placement_z, vector<vect
     return minCost;
 }
 
+#ifndef RANDOM
 double placementFunction(vector<int>& placement_z, vector<vector<int>>& configuration_x)
 {
     initial_placement(placement_z, configuration_x);
@@ -559,3 +560,16 @@ double placementFunction(vector<int>& placement_z, vector<vector<int>>& configur
     configuration_x = best_config;
     return minCost;
 }
+#else // ifdef RANDOM
+double placementFunction(vector<int>& placement_z, vector<vector<int>>& configuration_x)
+{
+    srand(time(NULL));
+    for (unsigned i = 0; i < avaPoint; i++)
+    {
+        placement_z[i] = rand() % 2;
+        if (placement_z[i])
+            initial_configuration(placement_z, configuration_x, i);
+    }
+    return costCalculation(placement_z, configuration_x);
+}
+#endif // ifdef RANDOM
