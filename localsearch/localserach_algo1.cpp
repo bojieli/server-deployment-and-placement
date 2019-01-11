@@ -10,12 +10,12 @@
 using namespace std;
 
 // Experiment settings
-#define avaPoint 10 //图中点的总个数
-#define appNum_w 10 //可选的app的总数，即算法中的w
+//#define avaPoint 30 //图中点的总个数
+//#define appNum_w 15 //可选的app的总数，即算法中的w
 //#define appOnEdge_m 3 //每个选中的server配置的app的个数，即算法中的M
 
-const double epsilon = 1e-5;
-const double alpha = 0.5;
+const double epsilon = 1e-3;
+//const double Alpha = 0.5;
 const double internet_delay = 8.0;
 
 unsigned long total_trials = 0;
@@ -203,6 +203,8 @@ vector<int> selectAppOnNewPoint() {
 }
 */
 
+double global_min_cost = numeric_limits<double>::infinity();
+
 //计算cost的函数
 double costCalculation(const vector<int>& placement_z, const vector<vector<int>>& config_x)
 {
@@ -284,9 +286,11 @@ double costCalculation(const vector<int>& placement_z, const vector<vector<int>>
 
     double delay_cost = flowgraph.MincostMaxflow(requests_sum + selectedPoint.size() + 2,
                                                  requests_sum + selectedPoint.size() + 3);
-    double total_cost = alpha * delay_cost + (1 - alpha) * deploy_cost;
+    double total_cost = Alpha * delay_cost + (1 - Alpha) * deploy_cost;
 
     //print_placement_and_config(placement_z, config_x, total_cost);
+    if (total_cost < global_min_cost)
+        global_min_cost = total_cost;
     return total_cost;
 }
 
@@ -438,17 +442,30 @@ void top_k_configuration(const vector<int>& placement_z, vector<vector<int>>& co
 
 
 #ifndef TOPK
+int best_config_iter = 0;
+
 double configurationFunction(const vector<int>& placement_z, vector<vector<int>>& config_x)
 {
     top_k_configuration(placement_z, config_x);
     double minCost = costCalculation(placement_z, config_x);
     vector<vector<int>> best_config = config_x;
+    unsigned cur_config_iter = 0;
     while (1) {
+        cur_config_iter ++;
         double curCost = try_admissible_configuration_operations(placement_z, config_x);
         if (curCost < (1 - epsilon) * minCost) {
             print_placement_and_config(placement_z, config_x, curCost);
+            double diff = minCost - curCost;
             minCost = curCost;
             best_config = config_x;
+
+            if (curCost < global_min_cost) {
+                best_config_iter = cur_config_iter;
+            }
+            else if (curCost - global_min_cost > (best_config_iter + appNum_w) * diff) {
+                printf("diff is too small: %f, expected %f = %f - %f, give up\n", diff, curCost - global_min_cost, curCost, global_min_cost);
+                break;
+            }
         }
         else {
             break;
@@ -520,6 +537,7 @@ double try_admissible_placement_operations(vector<int>& placement_z, vector<vect
             initial_configuration(placement_z, config_x, i);
             double curCost = configurationFunction(placement_z, config_x);
             if (curCost < (1 - epsilon) * minCost) {
+                return curCost;
                 minCost = curCost;
                 best_placement = placement_z;
                 best_config = config_x;
@@ -534,6 +552,7 @@ double try_admissible_placement_operations(vector<int>& placement_z, vector<vect
             placement_z[i] = 0;
             double curCost = configurationFunction(placement_z, config_x);
             if (curCost < (1 - epsilon) * minCost) {
+                return curCost;
                 minCost = curCost;
                 best_placement = placement_z;
                 best_config = config_x;
@@ -551,6 +570,7 @@ double try_admissible_placement_operations(vector<int>& placement_z, vector<vect
                     placement_z[i] = 0;
                     double curCost = configurationFunction(placement_z, config_x);
                     if (curCost < (1 - epsilon) * minCost) {
+                        return curCost;
                         minCost = curCost;
                         best_placement = placement_z;
                         best_config = config_x;
@@ -594,12 +614,27 @@ double placementFunction(vector<int>& placement_z, vector<vector<int>>& configur
 double placementFunction(vector<int>& placement_z, vector<vector<int>>& configuration_x)
 {
     srand(time(NULL));
+    initial_placement(placement_z, configuration_x);
+    unsigned int num_servers = 0;
     for (unsigned i = 0; i < avaPoint; i++)
-    {
-        placement_z[i] = rand() % 2;
         if (placement_z[i])
-            initial_configuration(placement_z, configuration_x, i);
+            num_servers ++;
+
+    vector<int> tmp;
+    for (unsigned i = 0; i < avaPoint; i++) {
+        tmp.push_back(i);
     }
+    unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+    shuffle(tmp.begin(), tmp.end(), default_random_engine(seed));
+
+    for (unsigned i = 0; i < avaPoint; i++)
+        placement_z[i] = 0;
+
+    for (unsigned i = 0; i < num_servers; i++) {
+        placement_z[tmp[i]] = 1;
+        initial_configuration(placement_z, configuration_x, tmp[i]);
+    }
+    print_placement_and_config(placement_z, configuration_x, 0);
     return costCalculation(placement_z, configuration_x);
 }
 #endif // ifdef RANDOM

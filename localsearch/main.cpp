@@ -154,7 +154,7 @@ void load_tasks_original()
 }
 */
 
-void load_graph(char *filename)
+void load_graph(const char *filename)
 {
     init_graph();
 
@@ -185,7 +185,7 @@ void load_graph(char *filename)
                     s += 9;
                     double capacity;
                     if (sscanf(s, "%lf", &capacity) == 1) {
-                        cloudlet_capacity[node] = capacity * appNum_w;
+                        cloudlet_capacity[node] = capacity;
                     }
                 }
 
@@ -289,7 +289,7 @@ void print_placement_and_config(const vector<int>& placement_z, const vector<vec
 {
     printf ("\n");
     chrono::duration<double> diff = (chrono::steady_clock::now() - start_time);
-    printf ("trial %ld   time %f s   speed %f ms/trial\n", total_trials, diff.count(), diff.count() * 1e3 / total_trials);
+    printf ("trial %ld   time %f s   speed %f ms/trial    global minCost %f\n", total_trials, diff.count(), diff.count() * 1e3 / total_trials, global_min_cost);
     printf ("cost %lf\n", minCost);
     for (unsigned node = 0; node < avaPoint; node ++)
         if (placement_z[node]) {
@@ -304,11 +304,12 @@ void print_placement_and_config(const vector<int>& placement_z, const vector<vec
 
 int main(int argc, char **argv)
 {
-    if (argc != 2) {
-        printf("Usage: %s <dgs file>\n", argv[0]);
-        return 1;
-    }
-    load_graph(argv[1]);
+    //if (argc != 2) {
+    //    printf("Usage: %s <dgs file>\n", argv[0]);
+    //    return 1;
+    //}
+    //load_graph(argv[1]);
+    load_graph("../100AP_graph.dgs");
     print_graph();
 
     vector<int> placement_z(avaPoint, 0);   //当placement_z[i]为1时代表图中的点i放置了服务器，为0则没有放置
