@@ -28,6 +28,8 @@ long zipf_rand(long range)
 }
 */
 
+chrono::time_point<chrono::steady_clock> start_time;
+
 double shortest_len[avaPoint][avaPoint];
 int shortest_path[avaPoint][avaPoint];
 double latency[avaPoint][avaPoint];
@@ -286,7 +288,9 @@ void print_graph()
 void print_placement_and_config(const vector<int>& placement_z, const vector<vector<int>>& configuration_x, double minCost)
 {
     printf ("\n");
-    printf ("placement: cost %lf\n", minCost);
+    chrono::duration<double> diff = (chrono::steady_clock::now() - start_time);
+    printf ("trial %ld   time %f s   speed %f ms/trial\n", total_trials, diff.count(), diff.count() * 1e3 / total_trials);
+    printf ("cost %lf\n", minCost);
     for (unsigned node = 0; node < avaPoint; node ++)
         if (placement_z[node]) {
             printf ("%3d: ", node);
@@ -311,6 +315,8 @@ int main(int argc, char **argv)
     //configuration_x矩阵中每一行都代表图中的一个点，而每一行中的每一列代表某个点i是否配置了服务j，configuration_x[i][j] = 1说明，i点放置了服务器，且配置了服务j；
     //configuration_x矩阵中某一行中有1存在，则说明这一行代表的点被放置了服务器
     vector<vector<int>> configuration_x(avaPoint, vector<int>(appNum_w, 0));
+
+    start_time = chrono::steady_clock::now();
 
     double minCost = placementFunction(placement_z, configuration_x);
     print_placement_and_config(placement_z, configuration_x, minCost);

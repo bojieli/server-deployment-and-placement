@@ -10,13 +10,15 @@
 using namespace std;
 
 // Experiment settings
-#define avaPoint 10 //图中点的总个数
-#define appNum_w 20 //可选的app的总数，即算法中的w
+#define avaPoint 20 //图中点的总个数
+#define appNum_w 10 //可选的app的总数，即算法中的w
 //#define appOnEdge_m 3 //每个选中的server配置的app的个数，即算法中的M
 
 const double epsilon = 1e-5;
 const double alpha = 0.5;
 const double internet_delay = 8.0;
+
+unsigned long total_trials = 0;
 
 /*
 vector<int> selectAppOnNewPoint();
@@ -202,7 +204,10 @@ vector<int> selectAppOnNewPoint() {
 */
 
 //计算cost的函数
-double costCalculation(const vector<int>& placement_z, const vector<vector<int>>& config_x) {
+double costCalculation(const vector<int>& placement_z, const vector<vector<int>>& config_x)
+{
+    total_trials ++;
+
     // Find the selected cloudlets.
     vector<int> selectedPoint;
     double deploy_cost = 0.0;
