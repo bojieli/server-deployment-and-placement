@@ -10,12 +10,19 @@
 using namespace std;
 
 // Experiment settings
-//#define avaPoint 30 //图中点的总个数
-//#define appNum_w 15 //可选的app的总数，即算法中的w
+#ifndef avaPoint
+#define avaPoint 30 //图中点的总个数
+#endif
+#ifndef appNum_w
+#define appNum_w 15 //可选的app的总数，即算法中的w
+#endif
+#ifndef Alpha
+#define Alpha 0.5
+#endif
+
 //#define appOnEdge_m 3 //每个选中的server配置的app的个数，即算法中的M
 
 const double epsilon = 1e-3;
-//const double Alpha = 0.5;
 const double internet_delay = 8.0;
 
 unsigned long total_trials = 0;

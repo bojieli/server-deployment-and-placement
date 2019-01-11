@@ -6,6 +6,10 @@
 
 using namespace std;
 
+#ifndef REQUEST_DENSITY
+#define REQUEST_DENSITY 1.0
+#endif
+
 /*
 long rand_range(long max, long min)
 {
@@ -185,7 +189,7 @@ void load_graph(const char *filename)
                     s += 9;
                     double capacity;
                     if (sscanf(s, "%lf", &capacity) == 1) {
-                        cloudlet_capacity[node] = capacity;
+                        cloudlet_capacity[node] = capacity / REQUEST_DENSITY;
                     }
                 }
 
