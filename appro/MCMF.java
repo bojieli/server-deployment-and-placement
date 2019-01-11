@@ -187,7 +187,7 @@ public class MCMF {
 		augraph.AddEdge(2 ,5 ,7, 1);
 		augraph.AddEdge(4 ,5 ,4, 2);
 		
-		augraph.MincostMaxflow(1, 5);
+		System.out.println(augraph.MincostMaxflow(1, 5));
 		
 	}
 

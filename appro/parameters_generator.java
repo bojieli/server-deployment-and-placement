@@ -14,21 +14,26 @@ import tpds.simulation;
 
 public class parameters_generator {
 	
-	public static final int AP_NUM = 50;          
+	public static final int AP_NUM = 100;          
 	
-	public static final int CLOUDLET_NUM = 10;
+	public static final int CLOUDLET_NUM = 5;
 	
-	public static final int TYPE_SUM = 30;    //the total number of service
+	public static final int TYPE_SUM = 20;    //the total number of service
 	
-	public static final int CLOUDLET_CAP = 10000;  //if cloudlets hava identical capacity
+	public static final int CLOUDLET_CAP = 100;  //if cloudlets hava identical capacity
 	
 	static final int ATTACH_NET = 3;    //generate network,the attachment rate of the network 
 	
-	public static final double INTERNET_DELAY = 0.8;    //Internet delay = 0.8
+	public static final double INTERNET_DELAY = 8;    //Internet delay = 0.8
 	
-	public static final int CONFIG_NUM = 10;      //the number of service for each server
+	public static final int CONFIG_NUM = 5;      //the number of service for each server
 	
 	public static double[] INTERNET;
+	
+    static final double MAXD = 10000;  
+	
+	static final int MAXI = 10000;
+	
 	
 	public static void delayinternet(){
 		
@@ -73,7 +78,37 @@ public class parameters_generator {
 		return typeK;
 	}
 	
-	//network delay ~ N(0.15,0.05),0.1 <= network delay <= 0.2
+	//configure number ~ N(5,2)
+			public static int configNumber(){
+				int num;
+				Random ran = new Random();
+				do{
+				num = (int)(Math.sqrt(2)*ran.nextGaussian()+5);
+				}while(num<3 || num >7);
+				return num;
+			}
+			
+		//openning cost ~N(100,50)
+			public static double openCost(){
+				double num;
+				Random ran = new Random();
+				do{
+				num = Math.sqrt(50)*ran.nextGaussian()+100;
+				}while(num < 60 || num > 140);
+				return num;
+			}
+			
+		//computation capacity ~N(10,5)
+			public static double computeCap1(){
+				double num;
+				Random ran = new Random();
+				num = (int)(Math.sqrt(5)*ran.nextGaussian()+10);
+				return num;
+			}
+			
+			
+	
+	//network delay ~ c
 	public static double networkDelay(){
 		double netdelay;
 		Random ran = new Random();
@@ -123,7 +158,7 @@ public class parameters_generator {
 		    
 		    Graph Algo1 = new SingleGraph(name);
 			try {
-				Algo1.read("ordinary_graph.dgs");
+				Algo1.read(parameters_generator.AP_NUM+"AP_graph_special.dgs");
 			} catch (ElementNotFoundException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
