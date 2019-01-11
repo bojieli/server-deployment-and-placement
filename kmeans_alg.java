@@ -20,7 +20,7 @@ public class kmeans_alg {
 	
 	private double total_delay = 0;
 	
- 	public void kmeans(Graph graph, int cloudletNum, int iteraNum, int serviceNum, double internetDelay){
+ 	public void kmeans(Graph graph, int cloudletNum, int iteraNum, int serviceNum, double internetDelay ,double alpha){
 		
 		//kmeans_alg k_mean = new kmeans_alg();
 		Node ap_node, cloudlet_node;
@@ -42,6 +42,8 @@ public class kmeans_alg {
 		for(int i=0;i<graph.getNodeCount();i++){
 			ap_node =graph.getNode(i);
 			ap_node.setAttribute("classify", "ap_node");
+			double a = ap_node.getAttribute("capacity");
+			ap_node.setAttribute("restcap", a);
 		}
 		
 		double[][] shortestpath = new double[graph.getNodeCount()][graph.getNodeCount()];
@@ -60,7 +62,14 @@ public class kmeans_alg {
 			
 			cur_cloudlet = this.findAllCloudlet(graph, cloudletNum);
 			
-			total_delay = 0;
+			total_delay = 0; 
+			
+			for(int i=0;i<graph.getNodeCount();i++){
+				ap_node =graph.getNode(i);
+				ap_node.setAttribute("classify", "ap_node");
+				double a = ap_node.getAttribute("capacity");
+				ap_node.setAttribute("restcap", a);
+			}
 			
 			for(int i = 0 ; i < cloudletNum ; i++){
 				cur_arrys.get(i).clear();
@@ -105,6 +114,7 @@ public class kmeans_alg {
 					}
 					System.out.println("total delay! : " + total_delay);
 					System.out.println("total cost! : " + total);
+					System.out.println("total! : " + (total_delay*alpha+(1-alpha)*total));
 					flag =1;
 					break;	
 				}
@@ -207,9 +217,9 @@ public class kmeans_alg {
 				config = str1arr(cloudlet_node.getAttribute("configuration"));
 				curcap=cloudlet_node.getAttribute("restcap");
 				if(kmeans_alg.hasElement(jtype.get(i), config)&&(jres.get(i)< curcap)){
-					    total_delay = total_delay + shortestpath[ap_index][sort[j]];       //?????????????????????????????????????????
+					    total_delay = total_delay + jres.get(i)*shortestpath[ap_index][sort[j]];       //?????????????????????????????????????????
 						curcap=curcap-jres.get(i);
-						ap_node.setAttribute("restcap", curcap);	
+						cloudlet_node.setAttribute("restcap", curcap);	
 						jobnum[j]++;
 						flag = true;
 				}else{
@@ -217,7 +227,7 @@ public class kmeans_alg {
 				}	
 			}while((flag == false)&&(j<sort.length));
 			if(flag == false && jtype.get(i) < serviceNum){
-				total_delay = total_delay + internetDelay;
+				total_delay = total_delay + jres.get(i)*internetDelay;
 			}	
 		}
 		
@@ -459,9 +469,9 @@ public class kmeans_alg {
 	
 	public static void main(String[] args) throws Exception, GraphParseException {
 		
-		Graph graph = new SingleGraph("Scale_free_network");
-		graph.read("100AP_graph.dgs");
-		Graph graph1 = new SingleGraph("Scale_free_network");
+//		Graph graph = new SingleGraph("Scale_free_network");
+//		graph.read("100AP_graph.dgs");
+		
 		
 		//graph1.write("test.dgs");
 		kmeans_alg test = new kmeans_alg();
@@ -470,15 +480,22 @@ public class kmeans_alg {
 		int[] appNum = {1,5,10,15,20};
 		double[] cap = {0.25,0.5,1,2,4};
 		int[] ap = {10,20,30,40,50};
+		double[] alpha ={0.1,0.3,0.5,0.7,0.9};
 		
 		//Graph genGraph(Graph graph, int nodeNum, double capScale, int serviceNum)
 		for(int i=0;i<5;i++ ){
+			Graph graph = new SingleGraph("Scale_free_network");
+			graph.read("100AP_graph.dgs");
+			Graph graph1 = new SingleGraph("Scale_free_network");
 			graph1= genGraph(graph, 30, 1, appNum[i]);
-		//kmeans(Graph graph, int cloudletNum, int iteraNum, int serviceNum, double internetDelay)
-		test.kmeans(graph1, edgeNum[i], 100,appNum[i], 8);
-		System.out.println("cloudlet num: "+edgeNum[i]+"; service number: "+appNum[i]+"; Internet delay: "+8);
-		//printCloudlet(Graph graph, int serviceNum)
-		test.printCloudlet(graph1, appNum[i]);	
+			graph1.write("test.dgs");
+//			System.exit(0);
+			//kmeans(Graph graph, int cloudletNum, int iteraNum, int serviceNum, double internetDelay)
+			test.kmeans(graph1, edgeNum[i], 100,appNum[i], 8,alpha[2]);
+			System.out.println("cloudlet num: "+edgeNum[i]+"; service number: "+appNum[i]+"; Internet delay: "+8);
+			//printCloudlet(Graph graph, int serviceNum)
+			test.printCloudlet(graph1, appNum[i]);	
+			//graph1.write("test.dgs")
 		}
 	} 
 	
@@ -512,8 +529,11 @@ public class kmeans_alg {
 				if(type.get(k)>= serviceNum){
 					type.remove(k);
 					resource.remove(k);
+					k--;
 				}	
 			}
+			node.setAttribute("type", type);
+			node.setAttribute("resource", resource);
 		}
 		return graph1;
 	}
